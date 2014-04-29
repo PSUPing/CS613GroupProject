@@ -2,8 +2,12 @@ import argparse
 import sys, os
 
 import numpy as np
-from sklearn.externals import joblib
+import pylab as pl
 
+from sklearn.externals import joblib
+from sklearn.decomposition import PCA, KernelPCA
+
+#### To run, put this into command line: python pred_setA1.py -d ./cs613_grcomp_s14/ -id 1
 
 if __name__ == '__main__':
     
@@ -76,10 +80,19 @@ if __name__ == '__main__':
         best_param = None
         best_score = None
         best_svc = None
-        
+
+# Start here for potential changes        
         for one_param in ParameterGrid(grid_obj):
             cls = cls_obj(**one_param)
-            cls.fit(data_trn, lbl_trn)
+####
+            kpca = KernelPCA(kernel="rbf", fit_inverse_transform=True, gamma=10)
+            X_kpca = kpca.fit_transform(data_trn)
+#            X_back = kpca.inverse_transform(X_kpca)
+#            pca = PCA()
+#            X_pca = pca.fit_transform(data_trn)
+            cls.fit(X_kpca, lbl_trn)
+####
+            #cls.fit(data_trn, lbl_trn)
             one_score = metric_obj(lbl_vld, cls.predict(data_vld))
             
             print ("param=%s, score=%.6f" % (repr(one_param),one_score))
@@ -102,7 +115,7 @@ if __name__ == '__main__':
         
         np.savetxt(fname_vld_lbl, lbl_vld, delimiter='\n', fmt=str_formats[args.id])
         np.savetxt(fname_tst_lbl, lbl_tst, delimiter='\n', fmt=str_formats[args.id])
-
+# Potential changes End
     except Exception, exc:
         import traceback
         print('Exception was raised in %s of %s: %s \n %s ' % (__name__, __file__, str(exc), ''.join(traceback.format_exc())))
