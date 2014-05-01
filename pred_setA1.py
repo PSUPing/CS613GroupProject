@@ -55,11 +55,18 @@ if __name__ == '__main__':
         data_vld, lbl_vld = load_svmlight_file(fname_vld, n_features=n_features, zero_based=True)
         data_tst, lbl_tst = load_svmlight_file(fname_tst, n_features=n_features, zero_based=True)
         
+        print("Files loaded")
+
         ### perform grid search using validation samples
         from sklearn.grid_search import ParameterGrid
         from sklearn.svm import LinearSVC, SVC, SVR
         from sklearn.metrics import mean_squared_error, accuracy_score
-        dt1_grid = [{'C': [1e-1, 1e0, 1e1, 1e2, 1e3]}]
+        from sklearn.linear_model import SGDClassifier
+
+        dt1_grid = [{'alpha': [0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001],
+                     'loss' : ['hinge', 'log', 'modified_huber', 'perceptron']}]
+
+#        dt1_grid = [{'C': [1e-1, 1e0, 1e1, 1e2, 1e3]}]
 
         dt2_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
                      'gamma': [0.1, 1.0, 10.0]}]
@@ -68,7 +75,8 @@ if __name__ == '__main__':
                      'gamma': [0.1, 1.0, 10.0]}]
 
         grids = (None, dt1_grid, dt2_grid, dt3_grid)
-        classifiers = (None, LinearSVC, SVC, SVR)
+        classifiers = (None, SGDClassifier, SVC, SVR)
+#        classifiers = (None, LinearSVC, SVC, SVR)
         metrics = (None, accuracy_score, accuracy_score, mean_squared_error)
         str_formats = (None, "%d", "%d", "%.6f")
         #LinearSVC(penalty='l2', loss='l2', dual=True, tol=0.0001, C=1.0,
@@ -81,20 +89,21 @@ if __name__ == '__main__':
         best_score = None
         best_svc = None
 
+        print("Begin analysis")
+
 # Start here for potential changes        
         for one_param in ParameterGrid(grid_obj):
             cls = cls_obj(**one_param)
-####
-            kpca = KernelPCA(kernel="rbf", fit_inverse_transform=True, gamma=10)
-            X_kpca = kpca.fit_transform(data_trn)
-#            X_back = kpca.inverse_transform(X_kpca)
-#            pca = PCA()
-#            X_pca = pca.fit_transform(data_trn)
-            cls.fit(X_kpca, lbl_trn)
-####
-            #cls.fit(data_trn, lbl_trn)
-            one_score = metric_obj(lbl_vld, cls.predict(data_vld))
+#            from sklearn.feature_selection import RFECV
             
+#            rfecv = RFECV(cls, step=1, cv=5)
+#            pct_data_trn = rfecv.fit(data_trn, lbl_trn)
+#            pct_data_tst = rfecv.transform(data_tst)
+#            pct_data_vld = rfecv.transform(data_vld)
+
+            cls.fit(data_trn, lbl_trn)
+            one_score = metric_obj(lbl_vld, cls.predict(data_vld))
+
             print ("param=%s, score=%.6f" % (repr(one_param),one_score))
             
             if ( best_score is None or 
@@ -119,9 +128,3 @@ if __name__ == '__main__':
     except Exception, exc:
         import traceback
         print('Exception was raised in %s of %s: %s \n %s ' % (__name__, __file__, str(exc), ''.join(traceback.format_exc())))
-
-
-
-
-
-
