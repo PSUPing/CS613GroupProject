@@ -61,7 +61,7 @@ if __name__ == '__main__':
         from sklearn.grid_search import ParameterGrid
         from sklearn.svm import LinearSVC, SVC, SVR
         from sklearn.metrics import mean_squared_error, accuracy_score
-        from sklearn.linear_model import SGDClassifier, SGDRegressor
+        from sklearn.linear_model import SGDClassifier, MultiTaskLasso
         from sklearn.neighbors import KNeighborsClassifier
         from sklearn.hmm import MultinomialHMM
 
@@ -74,14 +74,14 @@ if __name__ == '__main__':
         dt2_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
                      'gamma': [0.1, 1.0, 10.0]}]
 
-        dt3_grid = [{'penalty': ['l2','l1', 'elasticnet'],
-                     'alpha': [0.01, 0.001, 0.0001, 0.00001]}]
+        dt3_grid = [{
+                     'alpha': [ 0.0001, 0.00001,0.000001]}]
 
 #        dt3_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
 #                     'gamma': [0.1, 1.0, 10.0]}]
 
         grids = (None, dt1_grid, dt2_grid, dt3_grid)
-        classifiers = (None, SGDClassifier, SVC, SGDRegressor)
+        classifiers = (None, SGDClassifier, SVC, MultiTaskLasso)
 #        classifiers = (None, LinearSVC, SVC, SVR)
         metrics = (None, accuracy_score, accuracy_score, mean_squared_error)
         str_formats = (None, "%d", "%d", "%.6f")
@@ -99,8 +99,8 @@ if __name__ == '__main__':
 
         for one_param in ParameterGrid(grid_obj):
             cls = cls_obj(**one_param)
-            cls.fit(data_trn, lbl_trn)
-            one_score = metric_obj(lbl_vld, cls.predict(data_vld))
+            cls.fit(data_trn.toarray(), lbl_trn)
+            one_score = metric_obj(lbl_vld, cls.predict(data_vld.toarray()))
 
             print ("param=%s, score=%.6f" % (repr(one_param),one_score))
             
@@ -111,7 +111,7 @@ if __name__ == '__main__':
                 best_score = one_score
                 best_svc = cls
             
-        pred_vld = best_svc.predict(data_vld)
+        pred_vld = best_svc.predict(data_vld.toarray())
         pred_tst = best_svc.predict(data_tst)
         
         print ("Best score for vld: %.6f" % (metric_obj(lbl_vld, pred_vld),))
