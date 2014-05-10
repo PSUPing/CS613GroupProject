@@ -61,7 +61,7 @@ if __name__ == '__main__':
         from sklearn.grid_search import ParameterGrid
         from sklearn.svm import LinearSVC, SVC, SVR
         from sklearn.metrics import mean_squared_error, accuracy_score
-        from sklearn.linear_model import SGDClassifier, Perceptron
+        from sklearn.linear_model import SGDClassifier, SGDRegressor
         from sklearn.neighbors import KNeighborsClassifier
         from sklearn.hmm import MultinomialHMM
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 #                     'gamma': [0.1, 1.0, 10.0]}]
 
         grids = (None, dt1_grid, dt2_grid, dt3_grid)
-        classifiers = (None, SGDClassifier, SVC, Perceptron)
+        classifiers = (None, SGDClassifier, SVC, SGDRegressor)
 #        classifiers = (None, LinearSVC, SVC, SVR)
         metrics = (None, accuracy_score, accuracy_score, mean_squared_error)
         str_formats = (None, "%d", "%d", "%.6f")
