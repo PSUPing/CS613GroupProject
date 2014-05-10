@@ -7,3 +7,6 @@ Fail
 
 Data set 3 MultiTaskLasso
 improvement at 0.0001 Alpha 
+
+Progressive agressive Classifier
+Improvement for Data set 2, score 0.5188
