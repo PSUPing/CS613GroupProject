@@ -61,7 +61,7 @@ if __name__ == '__main__':
         from sklearn.grid_search import ParameterGrid
         from sklearn.svm import LinearSVC, SVC, SVR
         from sklearn.metrics import mean_squared_error, accuracy_score
-        from sklearn.linear_model import SGDClassifier, MultiTaskLasso,PassiveAggressiveClassifier
+        from sklearn.linear_model import SGDClassifier, MultiTaskLasso, PassiveAggressiveClassifier
         from sklearn.neighbors import KNeighborsClassifier
         from sklearn.hmm import MultinomialHMM
 
@@ -75,9 +75,7 @@ if __name__ == '__main__':
        #              'gamma': [0.1, 1.0, 10.0]}]
         dt2_grid = [{'C': [0.1,1.0, 100.0, 10000.0],'n_iter':[1,5,4]}]
 
-        dt3_grid = [{
-                     'alpha': [ 0.0001, 0.00001,0.000001],
-'fit_intercept': [True,False]}]
+        dt3_grid = [{'alpha': [ 0.0001, 0.00001,0.000001]}]
 
 #        dt3_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
 #                     'gamma': [0.1, 1.0, 10.0]}]
