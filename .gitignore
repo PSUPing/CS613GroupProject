@@ -57,3 +57,4 @@ docs/_build/
 *.lbl
 *.pred
 cs613_grcomp_s14/pred_baseline.py
+comparison.txt
