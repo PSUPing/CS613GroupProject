@@ -61,49 +61,24 @@ if __name__ == '__main__':
         from sklearn.grid_search import ParameterGrid
         from sklearn.svm import LinearSVC, SVC, SVR
         from sklearn.metrics import mean_squared_error, accuracy_score
-<<<<<<< HEAD
-        from sklearn.linear_model import SGDClassifier,MultiTaskLasso,SGDRegressor
-=======
         from sklearn.linear_model import SGDClassifier, MultiTaskLasso, PassiveAggressiveClassifier
->>>>>>> a8e1031701bf23801019be6377c49dba90414c8d
         from sklearn.neighbors import KNeighborsClassifier
-        from sklearn.naive_bayes import GaussianNB
-        from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor, RandomForestClassifier
         from sklearn.hmm import MultinomialHMM
-
+        from sklearn.lda import LDA
 
         dt1_grid = [{'alpha': [0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001],
                      'loss' : ['hinge', 'log', 'modified_huber', 'perceptron']}]
 
 #        dt1_grid = [{'C': [1e-1, 1e0, 1e1, 1e2, 1e3]}]
-        #dt2_grid = [{'alpha': [0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001],
-                     #'loss' : ['hinge', 'log', 'modified_huber', 'perceptron']}]
-        dt2_grid = [{'n_estimators' : [1,10,100,500]}] 
-        #dt2_grid = [{'learning_rate':[0.1],
-         #            'n_estimators' : [100]}] 
-        #dt2_grid = [{'X':[100,1000],
-         #            'Y' : [100,1000]}]        
-        #dt2_grid = [{'alpha': [0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001],
-                     #'loss' : ['squared_loss', 'huber']}]
+
       #  dt2_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
        #              'gamma': [0.1, 1.0, 10.0]}]
-<<<<<<< HEAD
-        #dt2_grid = [{'C': [0.1,1.0, 100.0, 10000.0],'n_iter':[1,5,4]}]
-        #dt2_grid = [{'C':[0.1,1.0,10.0],'n_iter': [1,5,4]}]
-        #dt2_grid = [{'n_iter': [1,100,300,600]}]
-        dt3_grid = [{'alpha': [ 0.0001, 0.00001,0.000001],
-'fit_intercept': [True,False]}]
-=======
         dt2_grid = [{'C': [0.1,1.0, 100.0, 10000.0],'n_iter':[1,5,4]}]
 
         dt3_grid = [{'alpha': [ 0.0001, 0.00001,0.000001]}]
->>>>>>> a8e1031701bf23801019be6377c49dba90414c8d
-
-   #     dt3_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
-#                     'gamma': [0.1, 1.0, 10.0]}]
 
         grids = (None, dt1_grid, dt2_grid, dt3_grid)
-        classifiers = (None, SGDClassifier,RandomForestClassifier, MultiTaskLasso)
+        classifiers = (None, SGDClassifier, PassiveAggressiveClassifier, MultiTaskLasso)
 #        classifiers = (None, LinearSVC, SVC, SVR)
         metrics = (None, accuracy_score, accuracy_score, mean_squared_error)
         str_formats = (None, "%d", "%d", "%.6f")
@@ -120,9 +95,26 @@ if __name__ == '__main__':
         best_svc = None
 
         for one_param in ParameterGrid(grid_obj):
+            if (args.id == 1):
+                from sklearn.kernel_approximation import AdditiveChi2Sampler
+                chi = AdditiveChi2Sampler()
+                trn_data = chi.fit_transform(data_trn, lbl_trn) 
+                vld_data = chi.transform(data_vld)
+                tst_data = chi.transform(data_tst)
+            elif (args.id == 2):
+                trn_data = data_trn.todense()
+                vld_data = data_vld.todense()
+                tst_data = data_tst.todense()
+            else:
+                pca = PCA()
+                pca = joblib.load("dt_combined.sqw.pca")
+                trn_data = pca.inverse_transform(data_trn.todense())
+                vld_data = pca.inverse_transform(data_vld.todense())
+                tst_data = pca.inverse_transform(data_tst.todense())
+
             cls = cls_obj(**one_param)
-            cls.fit(data_trn.toarray(), lbl_trn)
-            one_score = metric_obj(lbl_vld, cls.predict(data_vld.toarray()))
+            cls.fit(trn_data, lbl_trn)
+            one_score = metric_obj(lbl_vld, cls.predict(vld_data))
 
             print ("param=%s, score=%.6f" % (repr(one_param),one_score))
             
@@ -133,8 +125,8 @@ if __name__ == '__main__':
                 best_score = one_score
                 best_svc = cls
             
-        pred_vld = best_svc.predict(data_vld.toarray())
-        pred_tst = best_svc.predict(data_tst)
+        pred_vld = best_svc.predict(vld_data)
+        pred_tst = best_svc.predict(tst_data)
         
         print ("Best score for vld: %.6f" % (metric_obj(lbl_vld, pred_vld),))
         print ("Best score for tst: %.6f" % (metric_obj(lbl_tst, pred_tst),))
