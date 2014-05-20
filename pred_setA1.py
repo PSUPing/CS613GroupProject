@@ -5,7 +5,7 @@ import numpy as np
 import pylab as pl
 
 from sklearn.externals import joblib
-from sklearn.decomposition import PCA, KernelPCA
+from sklearn.decomposition import PCA, KernelPCA, TruncatedSVD
 
 #### To run, put this into command line: python pred_setA1.py -d ./cs613_grcomp_s14/ -id 1
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 # Start here for potential changes
         ### perform grid search using validation samples
         from sklearn.grid_search import ParameterGrid
-        from sklearn.svm import LinearSVC, SVC, SVR
+        from sklearn.svm import LinearSVC, SVC, SVR, NuSVR
         from sklearn.metrics import mean_squared_error, accuracy_score
         from sklearn.linear_model import SGDClassifier, MultiTaskLasso, PassiveAggressiveClassifier
         from sklearn.neighbors import KNeighborsClassifier
@@ -75,10 +75,13 @@ if __name__ == '__main__':
        #              'gamma': [0.1, 1.0, 10.0]}]
         dt2_grid = [{'C': [0.1,1.0, 100.0, 10000.0],'n_iter':[1,5,4]}]
 
-        dt3_grid = [{'alpha': [ 0.0001, 0.00001,0.000001]}]
+
+        dt3_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
+                     'gamma': [0.1, 1.0, 10.0]}]
+#        dt3_grid = [{'alpha': [ 0.0001, 0.00001,0.000001]}]
 
         grids = (None, dt1_grid, dt2_grid, dt3_grid)
-        classifiers = (None, SGDClassifier, PassiveAggressiveClassifier, MultiTaskLasso)
+        classifiers = (None, SGDClassifier, PassiveAggressiveClassifier, NuSVR)
 #        classifiers = (None, LinearSVC, SVC, SVR)
         metrics = (None, accuracy_score, accuracy_score, mean_squared_error)
         str_formats = (None, "%d", "%d", "%.6f")
@@ -94,24 +97,24 @@ if __name__ == '__main__':
         best_score = None
         best_svc = None
 
-        for one_param in ParameterGrid(grid_obj):
-            if (args.id == 1):
-                from sklearn.kernel_approximation import AdditiveChi2Sampler
-                chi = AdditiveChi2Sampler()
-                trn_data = chi.fit_transform(data_trn, lbl_trn) 
-                vld_data = chi.transform(data_vld)
-                tst_data = chi.transform(data_tst)
-            elif (args.id == 2):
-                trn_data = data_trn.todense()
-                vld_data = data_vld.todense()
-                tst_data = data_tst.todense()
-            else:
-                pca = PCA()
-                pca = joblib.load("dt_combined.sqw.pca")
-                trn_data = pca.inverse_transform(data_trn.todense())
-                vld_data = pca.inverse_transform(data_vld.todense())
-                tst_data = pca.inverse_transform(data_tst.todense())
+        if (args.id == 1):
+            from sklearn.kernel_approximation import AdditiveChi2Sampler
+            chi = AdditiveChi2Sampler()
+            trn_data = chi.fit_transform(data_trn, lbl_trn) 
+            vld_data = chi.transform(data_vld)
+            tst_data = chi.transform(data_tst)
+        elif (args.id == 2):
+            trn_data = data_trn.todense()
+            vld_data = data_vld.todense()
+            tst_data = data_tst.todense()
+        else:
+            pca = PCA()
+            pca = joblib.load("dt_combined.sqw.pca")
+            trn_data = pca.inverse_transform(data_trn.todense())
+            vld_data = pca.inverse_transform(data_vld.todense())
+            tst_data = pca.inverse_transform(data_tst.todense())
 
+        for one_param in ParameterGrid(grid_obj):
             cls = cls_obj(**one_param)
             cls.fit(trn_data, lbl_trn)
             one_score = metric_obj(lbl_vld, cls.predict(vld_data))
