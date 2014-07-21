@@ -54,3 +54,6 @@ docs/_build/
 
 
 *.svm
+*.lbl
+*.pred
+cs613_grcomp_s14/pred_baseline.py

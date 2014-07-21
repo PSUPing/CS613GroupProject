@@ -5,7 +5,7 @@ import numpy as np
 import pylab as pl
 
 from sklearn.externals import joblib
-from sklearn.decomposition import PCA, KernelPCA
+from sklearn.decomposition import PCA, KernelPCA, TruncatedSVD
 
 #### To run, put this into command line: python pred_setA1.py -d ./cs613_grcomp_s14/ -id 1
 
@@ -56,32 +56,32 @@ if __name__ == '__main__':
         data_tst, lbl_tst = load_svmlight_file(fname_tst, n_features=n_features, zero_based=True)
         
         print("Files loaded")
-
+# Start here for potential changes
         ### perform grid search using validation samples
         from sklearn.grid_search import ParameterGrid
-        from sklearn.svm import LinearSVC, SVC, SVR
+        from sklearn.svm import LinearSVC, SVC, SVR, NuSVR
         from sklearn.metrics import mean_squared_error, accuracy_score
-        from sklearn.linear_model import SGDClassifier, Perceptron
+        from sklearn.linear_model import SGDClassifier, MultiTaskLasso, PassiveAggressiveClassifier
         from sklearn.neighbors import KNeighborsClassifier
         from sklearn.hmm import MultinomialHMM
+        from sklearn.lda import LDA
 
-# Start here for potential changes
         dt1_grid = [{'alpha': [0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001],
                      'loss' : ['hinge', 'log', 'modified_huber', 'perceptron']}]
 
 #        dt1_grid = [{'C': [1e-1, 1e0, 1e1, 1e2, 1e3]}]
 
-        dt2_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
+      #  dt2_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
+       #              'gamma': [0.1, 1.0, 10.0]}]
+        dt2_grid = [{'C': [0.1,1.0, 100.0, 10000.0],'n_iter':[1,5,4]}]
+
+
+        dt3_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0],
                      'gamma': [0.1, 1.0, 10.0]}]
-
-        dt3_grid = [{'penalty': ['l2','l1', 'elasticnet'],
-                     'alpha': [0.01, 0.001, 0.0001, 0.00001]}]
-
-#        dt3_grid = [{'kernel': ['rbf'], 'C': [1.0, 100.0, 10000.0],
-#                     'gamma': [0.1, 1.0, 10.0]}]
+#        dt3_grid = [{'alpha': [ 0.0001, 0.00001,0.000001]}]
 
         grids = (None, dt1_grid, dt2_grid, dt3_grid)
-        classifiers = (None, SGDClassifier, SVC, Perceptron)
+        classifiers = (None, SGDClassifier, PassiveAggressiveClassifier, NuSVR)
 #        classifiers = (None, LinearSVC, SVC, SVR)
         metrics = (None, accuracy_score, accuracy_score, mean_squared_error)
         str_formats = (None, "%d", "%d", "%.6f")
@@ -97,10 +97,27 @@ if __name__ == '__main__':
         best_score = None
         best_svc = None
 
+        if (args.id == 1):
+            from sklearn.kernel_approximation import AdditiveChi2Sampler
+            chi = AdditiveChi2Sampler()
+            trn_data = chi.fit_transform(data_trn, lbl_trn) 
+            vld_data = chi.transform(data_vld)
+            tst_data = chi.transform(data_tst)
+        elif (args.id == 2):
+            trn_data = data_trn.todense()
+            vld_data = data_vld.todense()
+            tst_data = data_tst.todense()
+        else:
+            pca = PCA()
+            pca = joblib.load("dt_combined.sqw.pca")
+            trn_data = pca.inverse_transform(data_trn.todense())
+            vld_data = pca.inverse_transform(data_vld.todense())
+            tst_data = pca.inverse_transform(data_tst.todense())
+
         for one_param in ParameterGrid(grid_obj):
             cls = cls_obj(**one_param)
-            cls.fit(data_trn, lbl_trn)
-            one_score = metric_obj(lbl_vld, cls.predict(data_vld))
+            cls.fit(trn_data, lbl_trn)
+            one_score = metric_obj(lbl_vld, cls.predict(vld_data))
 
             print ("param=%s, score=%.6f" % (repr(one_param),one_score))
             
@@ -111,8 +128,8 @@ if __name__ == '__main__':
                 best_score = one_score
                 best_svc = cls
             
-        pred_vld = best_svc.predict(data_vld)
-        pred_tst = best_svc.predict(data_tst)
+        pred_vld = best_svc.predict(vld_data)
+        pred_tst = best_svc.predict(tst_data)
         
         print ("Best score for vld: %.6f" % (metric_obj(lbl_vld, pred_vld),))
         print ("Best score for tst: %.6f" % (metric_obj(lbl_tst, pred_tst),))
